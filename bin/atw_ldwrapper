@@ -1,0 +1,18 @@
+#!/bin/bash
+ATW_TRUELD=${ATW_TRUELD:-gcc}
+args=()
+while (( $# > 0 ))
+do
+  if [[ "$1" == "-framework" ]] # -framework Name
+  then
+    if [[ "$2" == "AudioToolbox" ]]
+    then
+      args+=(-lCoreAudioToolboxWrapper -lpathcch -lshell32)
+    fi
+    shift # shift twice to remove -framework Name
+  else
+    args+=("$1")
+  fi
+  shift
+done
+exec "$ATW_TRUELD" "${args[@]}"
