@@ -7,14 +7,7 @@ if(BUILD_SHARED_LIBS)
 endif()
 set(BUILD_SHARED_LIBS 0)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(LIBDIR lib64)
-else()
-  set(LIBDIR lib32)
-endif()
-
 include_directories(${CMAKE_SOURCE_DIR}/include)
-link_directories(${CMAKE_SOURCE_DIR}/${LIBDIR})
 
 add_library(CoreAudioToolboxWrapper src/AudioToolboxEntryWrapper.asm src/AudioToolboxLoader.c)
 add_executable(testapp src/testapp.c)
