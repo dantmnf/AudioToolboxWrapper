@@ -8,8 +8,6 @@ i.e. You need to install iTunes, or be able to `LoadLibrary("CoreAudioToolbox.dl
     replaces linker parameters so we don't need to modify FFmpeg source
 * `include`<br>
     header files from [nu774/qaac](https://github.com/nu774/qaac), with some minor changes. Not guranteed to work with other programs.
-* `lib32` / `lib64`<br>
-    pathcch import library from Windows SDK since MinGW-w64 doesn't have it (original name: pathcch.lib)
 * `cmake`<br>
     YASM support from x265
 

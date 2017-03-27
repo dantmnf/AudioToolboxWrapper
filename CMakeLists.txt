@@ -18,9 +18,8 @@ link_directories(${CMAKE_SOURCE_DIR}/${LIBDIR})
 
 add_library(CoreAudioToolboxWrapper src/AudioToolboxEntryWrapper.asm src/AudioToolboxLoader.c)
 add_executable(testapp src/testapp.c)
-target_link_libraries(CoreAudioToolboxWrapper pathcch shell32)
+target_link_libraries(CoreAudioToolboxWrapper shlwapi shell32)
 target_link_libraries(testapp CoreAudioToolboxWrapper)
-install(FILES ${LIBDIR}/libpathcch.a DESTINATION lib)
 install(FILES bin/atw_ldwrapper DESTINATION bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

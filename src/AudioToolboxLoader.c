@@ -1,7 +1,7 @@
 #define UNICODE
 #include <windows.h>
 #include <shlobj.h>
-#include <pathcch.h>
+#include <shlwapi.h>
 #include <stdio.h>
 #include <stdint.h>
 #define LIBNAME "CoreAudioToolbox.dll"
@@ -23,8 +23,7 @@ static defAudioConverterNew pAudioConverterNew;
 static HMODULE LoadTargetLibrary() {
   WCHAR *pszAppleAppSupportPath = HeapAlloc(GetProcessHeap(), 0, 65536);
   SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, pszAppleAppSupportPath);
-  // PathAppendW(pszAppleAppSupportPath, L"Apple\\Apple Application Support");
-  PathCchAppendEx(pszAppleAppSupportPath, 32767, L"Apple\\Apple Application Support", PATHCCH_ALLOW_LONG_PATHS);
+  PathAppendW(pszAppleAppSupportPath, L"Apple\\Apple Application Support");
   SetDllDirectoryW(pszAppleAppSupportPath);
   HMODULE hLib = LoadLibraryW(LIBNAMEW);
   SetDllDirectoryW(NULL);
