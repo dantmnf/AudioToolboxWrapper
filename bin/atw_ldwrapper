@@ -7,7 +7,7 @@ do
   then
     if [[ "$2" == "AudioToolbox" ]]
     then
-      args+=(-lCoreAudioToolboxWrapper -lshlwapi -lshell32)
+      args+=(-lAudioToolboxWrapper -lshlwapi -lshell32)
     fi
     shift # shift twice to remove -framework Name
   else
