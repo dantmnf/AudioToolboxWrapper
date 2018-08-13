@@ -36,6 +36,8 @@ DECLARE_FUNCTION_POINTER(AudioConverterGetPropertyInfo)
 DECLARE_FUNCTION_POINTER(AudioConverterNew)
 DECLARE_FUNCTION_POINTER(AudioConverterReset)
 DECLARE_FUNCTION_POINTER(AudioConverterSetProperty)
+DECLARE_FUNCTION_POINTER(AudioFormatGetProperty)
+DECLARE_FUNCTION_POINTER(AudioFormatGetPropertyInfo)
 
 static HMODULE hTargetLib = NULL;
 
@@ -68,6 +70,8 @@ static HMODULE PrepareLazyLoad() {
   FILL(hTargetLib, AudioConverterNew);
   FILL(hTargetLib, AudioConverterReset);
   FILL(hTargetLib, AudioConverterSetProperty);
+  FILL(hTargetLib, AudioFormatGetProperty);
+  FILL(hTargetLib, AudioFormatGetPropertyInfo);
 
   return hTargetLib;
 }
@@ -130,6 +134,27 @@ OSStatus AudioConverterSetProperty(
 {
   LOADLIB_GUARD;
   return CALL_FUNCTION(AudioConverterSetProperty, inAudioConverter, inPropertyID, inPropertyDataSize, inPropertyData);
+}
+
+OSStatus AudioFormatGetProperty (
+   AudioFormatPropertyID inPropertyID,
+   UInt32                inSpecifierSize,
+   const void            *inSpecifier,
+   UInt32                *ioPropertyDataSize,
+   void                  *outPropertyData)
+{
+  LOADLIB_GUARD;
+  return CALL_FUNCTION(AudioFormatGetProperty, inPropertyID, inSpecifierSize, inSpecifier, ioPropertyDataSize, outPropertyData);
+}
+
+OSStatus AudioFormatGetPropertyInfo (
+   AudioFormatPropertyID  inPropertyID,
+   UInt32                 inSpecifierSize,
+   const void             *inSpecifier,
+   UInt32                 *outPropertyDataSize)
+{
+  LOADLIB_GUARD;
+  return CALL_FUNCTION(AudioFormatGetPropertyInfo, inPropertyID, inSpecifierSize, inSpecifier, outPropertyDataSize);
 }
 
 OSStatus AudioConverterFillComplexBuffer(
