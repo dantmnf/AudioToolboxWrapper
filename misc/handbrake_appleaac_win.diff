@@ -7,8 +7,8 @@ index 000000000..045c740bf
 +$(eval $(call import.MODULE.defs,AUDIOTOOLBOXWRAPPER,AudioToolboxWrapper))
 +$(eval $(call import.CONTRIB.defs,AUDIOTOOLBOXWRAPPER))
 +
-+AUDIOTOOLBOXWRAPPER.FETCH.url     = https://github.com/maz-1/AudioToolboxWrapper/releases/download/v0.4/AudioToolboxWrapper-v0.4.tar.gz
-+AUDIOTOOLBOXWRAPPER.FETCH.sha256  = 7f3534f3fc9e0977cd343e11201153fa955363aefb2117a3b6bf5af321efdc18
++AUDIOTOOLBOXWRAPPER.FETCH.url     = https://github.com/maz-1/AudioToolboxWrapper/releases/download/v0.3/AudioToolboxWrapper-v0.3.tar.gz
++AUDIOTOOLBOXWRAPPER.FETCH.sha256  = b85ed8ee806412861da07130c619e3fab27804da2c2fab4e6d9e0d08f85a6c85
 +
 +#AUDIOTOOLBOXWRAPPER.GCC.args.extra += $(AUDIOTOOLBOXWRAPPER.GCC.args.O.$(AUDIOTOOLBOXWRAPPER.GCC.O))
 +#AUDIOTOOLBOXWRAPPER.GCC.cxx_std = 1
