@@ -66,6 +66,7 @@ static HMODULE LoadTargetLibrary() {
   
   HMODULE hLib = LoadLibraryExW(LIBNAMEW, NULL, LOAD_LIBRARY_SEARCH_USER_DIRS|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
   SetDllDirectoryW(NULL);
+  HeapFree(GetProcessHeap(), 0, pszQtFilesPath);
   HeapFree(GetProcessHeap(), 0, pszAppleAppSupportPath);
   return hLib;
 }
