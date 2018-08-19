@@ -1,0 +1,230 @@
+diff --git a/contrib/audiotoolboxwrapper/module.defs b/contrib/audiotoolboxwrapper/module.defs
+new file mode 100644
+index 000000000..045c740bf
+--- /dev/null
++++ b/contrib/audiotoolboxwrapper/module.defs
+@@ -0,0 +1,29 @@
++$(eval $(call import.MODULE.defs,AUDIOTOOLBOXWRAPPER,AudioToolboxWrapper))
++$(eval $(call import.CONTRIB.defs,AUDIOTOOLBOXWRAPPER))
++
++AUDIOTOOLBOXWRAPPER.FETCH.url     = https://github.com/maz-1/AudioToolboxWrapper/releases/download/v0.3/AudioToolboxWrapper-v0.3.tar.gz
++AUDIOTOOLBOXWRAPPER.FETCH.sha256  = b85ed8ee806412861da07130c619e3fab27804da2c2fab4e6d9e0d08f85a6c85
++
++#AUDIOTOOLBOXWRAPPER.GCC.args.extra += $(AUDIOTOOLBOXWRAPPER.GCC.args.O.$(AUDIOTOOLBOXWRAPPER.GCC.O))
++#AUDIOTOOLBOXWRAPPER.GCC.cxx_std = 1
++
++## optional static libs need to be marked
++#AUDIOTOOLBOXWRAPPER.OSL.libs  = AudioToolboxWrapper
++#AUDIOTOOLBOXWRAPPER.OSL.files = $(foreach i,$(AUDIOTOOLBOXWRAPPER.OSL.libs),$(call fn.ABSOLUTE,$(CONTRIB.build/)lib/lib$(i).a))
++
++AUDIOTOOLBOXWRAPPER.CONFIGURE.exe         = cmake
++AUDIOTOOLBOXWRAPPER.CONFIGURE.args.prefix = -DCMAKE_INSTALL_PREFIX="$(AUDIOTOOLBOXWRAPPER.CONFIGURE.prefix)"
++AUDIOTOOLBOXWRAPPER.CONFIGURE.deps        =
++AUDIOTOOLBOXWRAPPER.CONFIGURE.static      =
++AUDIOTOOLBOXWRAPPER.CONFIGURE.shared      = -DENABLE_SHARED=OFF
++AUDIOTOOLBOXWRAPPER.CONFIGURE.extra       = -G "Unix Makefiles"
++
++ifeq (1,$(BUILD.cross))
++    ifeq (mingw,$(BUILD.system))
++        AUDIOTOOLBOXWRAPPER.CONFIGURE.extra += -DWIN32=ON
++    endif
++    AUDIOTOOLBOXWRAPPER.CONFIGURE.args.host  = -DCMAKE_SYSTEM_NAME="$(AUDIOTOOLBOXWRAPPER.CONFIGURE.host)"
++    AUDIOTOOLBOXWRAPPER.CONFIGURE.args.build = -DCMAKE_HOST_SYSTEM="$(AUDIOTOOLBOXWRAPPER.CONFIGURE.build)"
++else
++    AUDIOTOOLBOXWRAPPER.CONFIGURE.args.host  = -DCMAKE_HOST_SYSTEM="$(AUDIOTOOLBOXWRAPPER.CONFIGURE.host)"
++endif
+\ No newline at end of file
+diff --git a/contrib/audiotoolboxwrapper/module.rules b/contrib/audiotoolboxwrapper/module.rules
+new file mode 100644
+index 000000000..c97e4667c
+--- /dev/null
++++ b/contrib/audiotoolboxwrapper/module.rules
+@@ -0,0 +1,2 @@
++$(eval $(call import.MODULE.rules,AUDIOTOOLBOXWRAPPER))
++$(eval $(call import.CONTRIB.rules,AUDIOTOOLBOXWRAPPER))
+\ No newline at end of file
+diff --git a/libhb/common.c b/libhb/common.c
+index d10811ecd..236135803 100644
+--- a/libhb/common.c
++++ b/libhb/common.c
+@@ -39,6 +39,37 @@
+ #include "vce_common.h"
+ #endif
+ 
++#if defined (__APPLE__) || defined (USE_CA_WRAPPER)
++#include <AudioToolbox/AudioToolbox.h>
++#ifdef USE_CA_WRAPPER
++#define NSExecutableLoadError 3587
++static int checkCoreAudioToolbox() {
++  AudioStreamBasicDescription in_format = {
++       .mSampleRate = 48000,
++       .mFormatID = kAudioFormatLinearPCM,
++       .mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked,
++       .mBytesPerPacket = 4,
++       .mFramesPerPacket = 1,
++       .mBytesPerFrame = 4,
++       .mChannelsPerFrame = 2,
++       .mBitsPerChannel = 16,
++   };
++  AudioStreamBasicDescription out_format = {
++       .mSampleRate = 44100,
++       .mFormatID = kAudioFormatLinearPCM,
++       .mChannelsPerFrame = in_format.mChannelsPerFrame,
++  };
++  AudioConverterRef converter;
++  int ret = AudioConverterNew(&in_format, &out_format, &converter);
++  AudioConverterDispose(converter);
++  if (ret != NSExecutableLoadError)
++    return 1;
++  else
++    return 0;
++}
++#endif
++#endif
++
+ static int mixdown_get_opus_coupled_stream_count(int mixdown);
+ 
+ /**********************************************************************
+@@ -368,10 +399,14 @@ static int hb_audio_encoder_is_enabled(int encoder)
+     }
+     switch (encoder)
+     {
+-#ifdef __APPLE__
++#if defined (__APPLE__) || defined (USE_CA_WRAPPER)
+         case HB_ACODEC_CA_AAC:
+         case HB_ACODEC_CA_HAAC:
++#ifdef __APPLE__
+             return 1;
++#else
++            return checkCoreAudioToolbox();
++#endif
+ #endif
+ 
+ #ifdef USE_FFMPEG_AAC
+diff --git a/libhb/hb.c b/libhb/hb.c
+index a137e4bbb..9a152f4e9 100644
+--- a/libhb/hb.c
++++ b/libhb/hb.c
+@@ -1687,7 +1687,7 @@ int hb_global_init()
+     hb_register(&hb_encvobsub);
+     hb_register(&hb_encavcodec);
+     hb_register(&hb_encavcodeca);
+-#ifdef __APPLE__
++#if defined (__APPLE__) || defined (USE_CA_WRAPPER)
+     hb_register(&hb_encca_aac);
+     hb_register(&hb_encca_haac);
+ #endif
+diff --git a/libhb/module.defs b/libhb/module.defs
+index 25f9b170c..aa0e6dee7 100644
+--- a/libhb/module.defs
++++ b/libhb/module.defs
+@@ -3,6 +3,10 @@ __deps__ := A52DEC BZIP2 LIBVPX FFMPEG FREETYPE LAME LIBASS LIBDCA \
+     LIBXML2 PTHREADW32 X264 X265 ZLIB LIBBLURAY FDKAAC LIBMFX LIBGNURX JANSSON \
+     HARFBUZZ LIBOPUS LIBSPEEX
+ 
++ifeq (1,$(FEATURE.audiotoolboxwrapper))
++    __deps__ += AUDIOTOOLBOXWRAPPER
++endif
++
+ ifeq (,$(filter $(BUILD.system),darwin cygwin mingw))
+     __deps__ += FONTCONFIG
+ endif
+@@ -78,6 +82,11 @@ else
+     LIBHB.platform.D = SYS_UNKNOWN
+ endif
+ 
++ifeq (1,$(FEATURE.audiotoolboxwrapper))
++    LIBHB.c += $(LIBHB.src/)platform/macosx/encca_aac.c
++    LIBHB.GCC.D += USE_CA_WRAPPER
++endif
++
+ ifeq (1,$(FEATURE.qsv))
+     LIBHB.GCC.D += USE_QSV HAVE_THREADS=1
+ endif
+@@ -124,6 +133,11 @@ ifeq (1,$(FEATURE.fdk_aac))
+ LIBHB.dll.libs += $(CONTRIB.build/)lib/libfdk-aac.a
+ endif
+ 
++ifeq (1,$(FEATURE.audiotoolboxwrapper))
++LIBHB.dll.libs += $(CONTRIB.build/)lib/libAudioToolboxWrapper.a
++LIBHB.GCC.l += shlwapi
++endif
++
+ ifeq (1,$(FEATURE.qsv))
+ LIBHB.dll.libs += $(CONTRIB.build/)lib/libmfx.a
+ endif
+diff --git a/make/configure.py b/make/configure.py
+index c3eeee34d..0e0901bee 100644
+--- a/make/configure.py
++++ b/make/configure.py
+@@ -1314,6 +1314,10 @@ def createCLI():
+     h = IfHost( 'enable FDK AAC audio encoder', '*-*-*', none=optparse.SUPPRESS_HELP ).value
+     grp.add_option( '--enable-fdk-aac', dest="enable_fdk_aac", default=False, action='store_true', help=h )
+     grp.add_option( '--disable-fdk-aac', dest="enable_fdk_aac", action='store_false' )
++    
++    h = IfHost( 'enable CoreAudioToolboxWrapper', '*-*-*', none=optparse.SUPPRESS_HELP ).value
++    grp.add_option( '--enable-audiotoolboxwrapper', dest="enable_audiotoolboxwrapper", default=False, action='store_true', help=h )
++    grp.add_option( '--disable-audiotoolboxwrapper', dest="enable_audiotoolboxwrapper", action='store_false' )
+ 
+     h = IfHost( 'enable FFmpeg AAC audio encoder', '*-*-*', none=optparse.SUPPRESS_HELP ).value
+     grp.add_option( '--enable-ffmpeg-aac', dest="enable_ffmpeg_aac", default=not host.match( '*-*-darwin*' ), action='store_true', help=h )
+@@ -1844,6 +1848,7 @@ class Tools:
+     doc.add( 'FEATURE.gtk.mingw',  int( options.enable_gtk_mingw ))
+     doc.add( 'FEATURE.gst',        int( not options.disable_gst ))
+     doc.add( 'FEATURE.fdk_aac',    int( options.enable_fdk_aac ))
++    doc.add( 'FEATURE.audiotoolboxwrapper',    int( options.enable_audiotoolboxwrapper ))
+     doc.add( 'FEATURE.ffmpeg_aac', int( options.enable_ffmpeg_aac or build.system == 'mingw' ))
+     doc.add( 'FEATURE.qsv',        int( options.enable_qsv ))
+     doc.add( 'FEATURE.vce',        int( options.enable_vce ))
+diff --git a/make/include/main.defs b/make/include/main.defs
+index d56b752d4..f7339de07 100644
+--- a/make/include/main.defs
++++ b/make/include/main.defs
+@@ -41,6 +41,10 @@ ifeq (1,$(FEATURE.fdk_aac))
+     MODULES += contrib/fdk-aac
+ endif
+ 
++ifeq (1,$(FEATURE.audiotoolboxwrapper))
++    MODULES += contrib/audiotoolboxwrapper
++endif
++
+ ifeq (1,$(FEATURE.x265))
+     MODULES += contrib/x265
+     MODULES += contrib/x265_8bit
+diff --git a/win/CS/HandBrakeWPF/Converters/Audio/AudioEncoderConverter.cs b/win/CS/HandBrakeWPF/Converters/Audio/AudioEncoderConverter.cs
+index ec70119e0..b41f55e7e 100644
+--- a/win/CS/HandBrakeWPF/Converters/Audio/AudioEncoderConverter.cs
++++ b/win/CS/HandBrakeWPF/Converters/Audio/AudioEncoderConverter.cs
+@@ -63,6 +63,12 @@ public object Convert(object[] values, Type targetType, object parameter, Cultur
+                     encoders.Remove(AudioEncoder.fdkaac);
+                     encoders.Remove(AudioEncoder.fdkheaac);
+                 }
++                
++                if (!HandBrakeEncoderHelpers.AudioEncoders.Any(a => a.ShortName.Contains("ca_aac")))
++                {
++                    encoders.Remove(AudioEncoder.CaAac);
++                    encoders.Remove(AudioEncoder.CaHaac);
++                }
+ 
+                 if (task != null && task.OutputFormat != OutputFormat.Mkv)
+                 {
+diff --git a/win/CS/HandBrakeWPF/Services/Encode/Model/Models/AudioEncoder.cs b/win/CS/HandBrakeWPF/Services/Encode/Model/Models/AudioEncoder.cs
+index 6031ce1f3..f5912892b 100644
+--- a/win/CS/HandBrakeWPF/Services/Encode/Model/Models/AudioEncoder.cs
++++ b/win/CS/HandBrakeWPF/Services/Encode/Model/Models/AudioEncoder.cs
+@@ -32,6 +32,15 @@ public enum AudioEncoder
+         [ShortName("fdk_haac")]
+         fdkheaac,
+ 
++ 
++        [DisplayName("AAC (Apple)")]
++        [ShortName("ca_aac")]
++        CaAac,
++
++        [DisplayName("HE-AAC (Apple)")]
++        [ShortName("ca_haac")]
++        CaHaac,
++
+         [DisplayName("MP3")]
+         [ShortName("mp3")]
+         Lame,

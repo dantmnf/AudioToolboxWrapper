@@ -41,14 +41,32 @@ DECLARE_FUNCTION_POINTER(AudioFormatGetPropertyInfo)
 
 static HMODULE hTargetLib = NULL;
 
+static BOOL GetModulePath(WCHAR* pBuf, DWORD dwBufSize) {
+  if (GetModuleFileNameW(NULL,pBuf,dwBufSize)) {
+    PathRemoveFileSpec(pBuf);
+    return TRUE;
+  }
+  return FALSE;
+}
 
 static HMODULE LoadTargetLibrary() {
+  WCHAR *pszQtFilesPath = HeapAlloc(GetProcessHeap(), 0, 65536);
+  GetModulePath(pszQtFilesPath, 65536);
+#ifdef _WIN64
+  PathAppendW(pszQtFilesPath, L"QTfiles64");
+#else
+  PathAppendW(pszQtFilesPath, L"QTfiles");
+#endif
+  AddDllDirectory(pszQtFilesPath);
+  
   WCHAR *pszAppleAppSupportPath = HeapAlloc(GetProcessHeap(), 0, 65536);
   SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, pszAppleAppSupportPath);
   PathAppendW(pszAppleAppSupportPath, L"Apple\\Apple Application Support");
-  SetDllDirectoryW(pszAppleAppSupportPath);
-  HMODULE hLib = LoadLibraryW(LIBNAMEW);
+  AddDllDirectory(pszAppleAppSupportPath);
+  
+  HMODULE hLib = LoadLibraryExW(LIBNAMEW, NULL, LOAD_LIBRARY_SEARCH_USER_DIRS|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
   SetDllDirectoryW(NULL);
+  HeapFree(GetProcessHeap(), 0, pszQtFilesPath);
   HeapFree(GetProcessHeap(), 0, pszAppleAppSupportPath);
   return hLib;
 }
