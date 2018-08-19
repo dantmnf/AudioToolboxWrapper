@@ -8,11 +8,16 @@
 #define LIBNAME "CoreAudioToolbox.dll"
 #define LIBNAMEW TEXT(LIBNAME)
 
+#ifdef _WIN64
+#define QTFILES L"QTfiles64"
+#else
+#define QTFILES L"QTfiles"
+#endif
 
 #ifdef __cplusplus
 #define FNTYPE(x) decltype(x)
 #define CAST(T, x) reinterpret_cast<T>(x)
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__clang__)
 #define FNTYPE(x) typeof(x)
 #define CAST(T, x) ((T)(x))
 #else
@@ -41,8 +46,8 @@ DECLARE_FUNCTION_POINTER(AudioFormatGetPropertyInfo)
 
 static HMODULE hTargetLib = NULL;
 
-static BOOL GetModulePath(WCHAR* pBuf, DWORD dwBufSize) {
-  if (GetModuleFileNameW(NULL,pBuf,dwBufSize)) {
+static BOOL GetModulePath(WCHAR *pBuf, DWORD dwBufSize) {
+  if (GetModuleFileNameW(NULL, pBuf, dwBufSize)) {
     PathRemoveFileSpec(pBuf);
     return TRUE;
   }
@@ -50,24 +55,27 @@ static BOOL GetModulePath(WCHAR* pBuf, DWORD dwBufSize) {
 }
 
 static HMODULE LoadTargetLibrary() {
-  WCHAR *pszQtFilesPath = HeapAlloc(GetProcessHeap(), 0, 65536);
-  GetModulePath(pszQtFilesPath, 65536);
-#ifdef _WIN64
-  PathAppendW(pszQtFilesPath, L"QTfiles64");
-#else
-  PathAppendW(pszQtFilesPath, L"QTfiles");
-#endif
-  AddDllDirectory(pszQtFilesPath);
-  
-  WCHAR *pszAppleAppSupportPath = HeapAlloc(GetProcessHeap(), 0, 65536);
-  SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, pszAppleAppSupportPath);
-  PathAppendW(pszAppleAppSupportPath, L"Apple\\Apple Application Support");
-  AddDllDirectory(pszAppleAppSupportPath);
-  
-  HMODULE hLib = LoadLibraryExW(LIBNAMEW, NULL, LOAD_LIBRARY_SEARCH_USER_DIRS|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-  SetDllDirectoryW(NULL);
-  HeapFree(GetProcessHeap(), 0, pszQtFilesPath);
-  HeapFree(GetProcessHeap(), 0, pszAppleAppSupportPath);
+  WCHAR *pszLibraryPath = HeapAlloc(GetProcessHeap(), 0, 65536);
+
+  /* try CoreAudioToolbox.dll */
+  HMODULE hLib = LoadLibraryW(LIBNAMEW);
+  if (hLib) goto success;
+
+  /* try Program Files\Common Files\Apple\Apple Application Support\CoreAudioToolbox.dll */
+  SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, pszLibraryPath);
+  PathAppendW(pszLibraryPath, L"Apple\\Apple Application Support\\" LIBNAMEW);
+  hLib = LoadLibraryExW(pszLibraryPath, NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+  if (hLib) goto success;
+
+  /* try executable path\QTfiles(64)\CoreAudioToolbox.dll */
+  if (GetModulePath(pszLibraryPath, 65535)) {
+    PathAppendW(pszLibraryPath, QTFILES L"\\" LIBNAMEW);
+    hLib = LoadLibraryExW(pszLibraryPath, NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+    if (hLib) goto success;
+  }
+
+success:
+  HeapFree(GetProcessHeap(), 0, pszLibraryPath);
   return hLib;
 }
 
