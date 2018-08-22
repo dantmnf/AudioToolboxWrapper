@@ -61,15 +61,16 @@ static HMODULE LoadTargetLibrary() {
   HMODULE hLib = LoadLibraryW(LIBNAMEW);
   if (hLib) goto success;
 
-  /* try Program Files\Common Files\Apple\Apple Application Support\CoreAudioToolbox.dll */
-  SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, pszLibraryPath);
-  PathAppendW(pszLibraryPath, L"Apple\\Apple Application Support\\" LIBNAMEW);
-  hLib = LoadLibraryExW(pszLibraryPath, NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
-  if (hLib) goto success;
-
   /* try executable path\QTfiles(64)\CoreAudioToolbox.dll */
   if (GetModulePath(pszLibraryPath, 65535)) {
     PathAppendW(pszLibraryPath, QTFILES L"\\" LIBNAMEW);
+    hLib = LoadLibraryExW(pszLibraryPath, NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+    if (hLib) goto success;
+  }
+
+  /* try Program Files\Common Files\Apple\Apple Application Support\CoreAudioToolbox.dll */
+  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES_COMMON, NULL, SHGFP_TYPE_CURRENT, pszLibraryPath))) {
+    PathAppendW(pszLibraryPath, L"Apple\\Apple Application Support\\" LIBNAMEW);
     hLib = LoadLibraryExW(pszLibraryPath, NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
     if (hLib) goto success;
   }
