@@ -8,8 +8,6 @@ i.e. You need to install iTunes, or be able to `LoadLibrary("CoreAudioToolbox.dl
     replaces linker parameters so we don't need to modify FFmpeg source
 * `include`<br>
     header files from [nu774/qaac](https://github.com/nu774/qaac), with some minor changes. Not guranteed to work with other programs.
-* `cmake`<br>
-    YASM support from x265
 
 Files in `bin` and `src` are licensed under WTFPL.
 
