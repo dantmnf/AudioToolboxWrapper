@@ -26,9 +26,9 @@ Files in `bin` and `src` are licensed under WTFPL.
 
     mkdir ffmpeg
     cd ffmpeg
-    export CFLAGS="-I${prefix}/include -Ofast -march=native" LDFLAGS="-L${prefix}/lib"
-    path/to/ffmpeg/source/tree/configure  --enable-audiotoolbox --enable-static --disable-ffprobe
-    make LD="${prefix}/bin/atw_ldwrapper" LDEXEFLAGS+=" -static"
+    export CFLAGS="-I${prefix}/include" LDFLAGS="-L${prefix}/lib"
+    path/to/ffmpeg/source/tree/configure  --enable-audiotoolbox
+    make LD="${prefix}/bin/atw_ldwrapper"
 
     # test if ffmpeg can use it
     ./ffmpeg -f lavfi -i sine=1000 -c aac_at -f mp4 -y NUL
