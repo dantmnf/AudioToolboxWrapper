@@ -120,14 +120,13 @@ DECLARE_FUNCTION(OSStatus, __cdecl, AudioConverterFillComplexBuffer,
 
 static BOOL MyPathRemoveFileSpecW(wchar_t *path) {
   int len = lstrlenW(path);
-  BOOL result = FALSE;
   for(wchar_t *pos = path + len; pos >= path; pos--) {
     if(*pos == L'\\') {
       *pos = 0;
-      result = TRUE;
+      return TRUE;
     }
   }
-  return result;
+  return FALSE;
 }
 
 static BOOL MyPathAppendW(wchar_t *path1, wchar_t *path2) {
@@ -178,15 +177,14 @@ static void PrepareLazyLoad() {
     return;
 
   if(InterlockedCompareExchange(&preparing, 1, 0) == 1) {
-    while(!prepared);
+    while(!preparing) SwitchToThread();
     return;
   }
 
   hTargetLib = LoadTargetLibrary();
 
   if(!hTargetLib) {
-    InterlockedCompareExchange(&preparing, 0, 1);
-    return;
+    goto end;
   }
 
   FILL(hTargetLib, AudioConverterDispose);
@@ -199,6 +197,7 @@ static void PrepareLazyLoad() {
   FILL(hTargetLib, AudioFormatGetProperty);
   FILL(hTargetLib, AudioFormatGetPropertyInfo);
 
-  InterlockedCompareExchange(&prepared, 1, 0);
+  prepared = 1;
+end:
   InterlockedCompareExchange(&preparing, 0, 1);
 }
